@@ -10,7 +10,7 @@ import java.util.Scanner;
 
 public class ChatClientApp {
 	private static final String SERVER_IP = "192.168.1.17";
-	private static final int PORT = 8889;
+	private static final int PORT = 8890;
 
 	public static void main(String[] args) {
 		String name = null;
@@ -31,7 +31,6 @@ public class ChatClientApp {
 		
 		//1. 소켓 만들고
 		Socket socket = new Socket();
-		System.out.println("소켓 생성");
 		//2. iostream
 		try {
 			socket.connect(new InetSocketAddress(SERVER_IP, PORT));
@@ -44,7 +43,7 @@ public class ChatClientApp {
 	
 			//3. join 성공
 			if("JOIN".equals(joinCheck.split(":")[0]) && "OK".equals(joinCheck.split(":")[1])) {
-				new ChatWindow(name, socket).show();
+				new ChatWindow(name, socket, br, pw).show();
 			} else {
 				System.out.println("접속 실패");
 			}

@@ -6,12 +6,19 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.Writer;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.List;
 
+/*
+ * JOIN:닉네임 (클라이언트)		<->	JOIN:OK / JOIN:FAILED (서버)
+ * MESSAGE:채팅내용 (클라이언트)	<->	MESSAGE:채팅내용 (서버)
+ * EXIT (클라이언트)			<->	EXIT (서버)
+ */
 public class ChatServerThread implements Runnable {
 	String nickName;
 	Socket socket;
+	BufferedReader br;
 	PrintWriter pw;
 	List<Writer> clients;
 	
@@ -22,34 +29,42 @@ public class ChatServerThread implements Runnable {
 
 	@Override
 	public void run() {
-		BufferedReader br = null;
+		//클라이언트 정보 표시
+		InetSocketAddress inetRemoteSocketAddress = (InetSocketAddress)socket.getRemoteSocketAddress();
+		String remoteHostAddress = inetRemoteSocketAddress.getAddress().getHostAddress();
+		int remotePort = inetRemoteSocketAddress.getPort();
+		ChatServer.log("connected by client[" + remoteHostAddress + ":" + remotePort + "]");
+		
 		try {
 			br = new BufferedReader(new InputStreamReader(socket.getInputStream(), "utf-8"));
 			pw = new PrintWriter(new OutputStreamWriter(socket.getOutputStream(), "utf-8"), true);
 			String joinCheck = br.readLine();
-			System.out.println("[server] " + joinCheck);
+			
+			// JOIN 신호 확인
 			if("JOIN".equals(joinCheck.split(":")[0])) {
-				System.out.println("[server] " + joinCheck.split(":")[0]);
 				pw.println("JOIN:OK");
 				this.nickName = joinCheck.split(":")[1];
 				broadcast(this.nickName + "님이 입장하셨습니다.");
 				join(pw);
 				
+				// MESSAGE 신호로 클라이언트와 통신 & EXIT 신호가 오면 종료 처리
 				while(true) {
-					System.out.println("[server] " + this.nickName);
 					String msg = br.readLine();
-					System.out.println("[server] " + msg);
-					if("EXIT".equals(msg.split(":")[0])) {
+					
+					//메시지 인코딩 처리
+					if("MESSAGE".equals(msg.split(":")[0])) {
+						ChatServer.log("58 : " + msg.split(":")[1]);
+						String decodedMessage = msg.split(":")[1];
+						ChatServer.log("60 : " + decodedMessage);
+						broadcast(this.nickName + " > " + decodedMessage);
+					} else if("EXIT".equals(msg)) {
 						pw.println("EXIT");
 						synchronized(clients) {
 							clients.remove(pw);
 						}
 						broadcast(this.nickName + "님이 퇴장하셨습니다.");
 						break;
-					}
-					else if("MESSAGE".equals(msg.split(":")[0])) {
-						broadcast(this.nickName + " > " + msg.split(":")[1]);
-					}
+					} 
 				}
 			} else {
 				pw.println("JOIN:FAILED");
@@ -59,6 +74,7 @@ public class ChatServerThread implements Runnable {
 		} finally {
 			try {
 				if(this.socket != null && this.socket.isClosed() == false) {
+					ChatServer.log("exited by client[" + remoteHostAddress + ":" + remotePort + "]");
 					this.socket.close();
 				}
 			} catch (IOException e) {
@@ -67,6 +83,7 @@ public class ChatServerThread implements Runnable {
 		}
 	}
 	
+	// 서버에 접속한 모든 클라이언트에게 메시지 전송
 	private void broadcast(String Message) {
 		for(Writer writer : this.clients) {
 			PrintWriter pw = (PrintWriter)writer;
@@ -74,6 +91,7 @@ public class ChatServerThread implements Runnable {
 		}
 	}
 	
+	// 클라이언트 접속 처리
 	private void join(Writer writer) {
 		synchronized(clients) {
 			clients.add(writer);

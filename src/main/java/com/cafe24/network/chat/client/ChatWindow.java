@@ -14,8 +14,6 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.Socket;
 
@@ -39,8 +37,8 @@ public class ChatWindow {
 					String msg = br.readLine();
 					if("EXIT".equals(msg)) {
 						break;
-					}
-					else if("MESSAGE".equals(msg.split(":")[0])) {
+					} else if("MESSAGE".equals(msg.split(":")[0])) {
+						//메시지 디코딩 처리
 						updateTextArea(msg.split(":")[1]);
 					}
 				}
@@ -58,20 +56,17 @@ public class ChatWindow {
 		}
 	}
 
-	public ChatWindow(String name, Socket socket) {
+	public ChatWindow(String name, Socket socket, BufferedReader br, PrintWriter pw) {
 		frame = new Frame(name);
 		pannel = new Panel();
 		buttonSend = new Button("Send");
 		textField = new TextField();
 		textArea = new TextArea(30, 80);
 		
-		try {
-			this.socket = socket;
-			this.br = new BufferedReader(new InputStreamReader(socket.getInputStream(), "utf-8"));
-			this.pw = new PrintWriter(new OutputStreamWriter(socket.getOutputStream(), "utf-8"), true);
-		} catch(IOException e) {
-			e.printStackTrace();
-		}
+		// 인자로 받은 닉네임과 소켓으로 통신
+		this.socket = socket;
+		this.br = br;
+		this.pw = pw;
 	}
 
 	private void finish() {
@@ -88,7 +83,6 @@ public class ChatWindow {
 	}
 	
 	public void show() {
-		new Thread(new ChatClientThread()).start();
 		// Button
 		buttonSend.setBackground(Color.GRAY);
 		buttonSend.setForeground(Color.WHITE);
@@ -131,6 +125,7 @@ public class ChatWindow {
 		frame.pack();
 		
 		//thread 생성
+		new Thread(new ChatClientThread()).start();
 	}
 	
 	private void updateTextArea(String message) {
@@ -140,9 +135,9 @@ public class ChatWindow {
 	
 	private void sendMessage() {
 		String message = textField.getText();
+		pw.println("MESSAGE:" + message);
+		
 		textField.setText("");
 		textField.requestFocus();
-		
-		pw.println("MESSAGE:" + message);
 	}
 }
