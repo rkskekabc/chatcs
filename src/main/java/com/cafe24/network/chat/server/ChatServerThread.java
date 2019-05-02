@@ -53,11 +53,10 @@ public class ChatServerThread implements Runnable {
 					
 					//메시지 인코딩 처리
 					if("MESSAGE".equals(msg.split(":")[0])) {
-						ChatServer.log("58 : " + msg.split(":")[1]);
 						String decodedMessage = msg.split(":")[1];
-						ChatServer.log("60 : " + decodedMessage);
 						broadcast(this.nickName + " > " + decodedMessage);
-					} else if("EXIT".equals(msg)) {
+					}
+					else if("EXIT".equals(msg)) {
 						pw.println("EXIT");
 						synchronized(clients) {
 							clients.remove(pw);

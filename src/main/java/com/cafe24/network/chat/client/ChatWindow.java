@@ -35,9 +35,11 @@ public class ChatWindow {
 			try {
 				while(true) {
 					String msg = br.readLine();
-					if("EXIT".equals(msg)) {
+					if("EXIT".equals(msg.split(":")[0])) {
+						System.out.println("client exit");
 						break;
-					} else if("MESSAGE".equals(msg.split(":")[0])) {
+					}
+					if("MESSAGE".equals(msg.split(":")[0])) {
 						//메시지 디코딩 처리
 						updateTextArea(msg.split(":")[1]);
 					}
@@ -69,10 +71,13 @@ public class ChatWindow {
 		this.pw = pw;
 	}
 
+	// 창을 닫으면 EXIT 신호를 보내고 종료
 	private void finish() {
 		pw.println("EXIT");
 		try {
 			if(socket != null && socket.isClosed() == false) {
+				// 스레드에서 받고있는 input 스트림을 먼저 닫아서 종료시킴
+				br.close();
 				socket.close();
 			}
 		} catch (IOException e) {
