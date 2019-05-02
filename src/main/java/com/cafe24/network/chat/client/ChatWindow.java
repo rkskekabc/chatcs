@@ -29,6 +29,8 @@ public class ChatWindow {
 	private BufferedReader br;
 	private PrintWriter pw;
 	
+	Thread thread;
+	
 	class ChatClientThread implements Runnable {
 		@Override
 		public void run() {
@@ -69,25 +71,14 @@ public class ChatWindow {
 		this.socket = socket;
 		this.br = br;
 		this.pw = pw;
-	}
-
-	// 창을 닫으면 EXIT 신호를 보내고 종료
-	private void finish() {
-		pw.println("EXIT");
-		try {
-			if(socket != null && socket.isClosed() == false) {
-				// 스레드에서 받고있는 input 스트림을 먼저 닫아서 종료시킴
-				br.close();
-				socket.close();
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
-		} finally {
-			System.exit(0);
-		}
+		
 	}
 	
 	public void show() {
+		//thread 생성
+		Thread thread = new Thread(new ChatClientThread());
+		thread.start();
+		
 		// Button
 		buttonSend.setBackground(Color.GRAY);
 		buttonSend.setForeground(Color.WHITE);
@@ -129,8 +120,27 @@ public class ChatWindow {
 		frame.setVisible(true);
 		frame.pack();
 		
-		//thread 생성
-		new Thread(new ChatClientThread()).start();
+	}
+
+	// 창을 닫으면 EXIT 신호를 보내고 종료
+	private void finish() {
+		try {
+			pw.println("EXIT");
+			// 스레드가 종료될 때까지 기다림
+			thread.join();
+			
+			if(socket != null && socket.isClosed() == false) {
+				// 스레드에서 받고있는 input 스트림을 먼저 닫아서 종료시킴
+				//br.close();
+				socket.close();
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		} finally {
+			System.exit(0);
+		}
 	}
 	
 	private void updateTextArea(String message) {
